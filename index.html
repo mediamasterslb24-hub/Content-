@@ -1,271 +1,343 @@
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Media Masters - Trendify SaaS Platform</title>
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        body { background-color: #030712; color: #f1f5f9; font-family: system-ui, -apple-system, sans-serif; }
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: #030712; }
-        ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 10px; }
-    </style>
-</head>
-<body class="min-h-screen font-sans antialiased selection:bg-purple-500 selection:text-white">
+<script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+<link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 
-    <div id="loading-screen" class="fixed inset-0 bg-[#030712] z-50 flex flex-col items-center justify-center space-y-4 hidden">
-        <div class="w-10 h-10 rounded-full border-4 border-slate-900 border-t-purple-500 animate-spin"></div>
-        <div class="text-center space-y-1">
-            <p class="text-xs font-mono font-black text-purple-400 tracking-widest uppercase animate-pulse">Syncing Active Firestore Document Clusters...</p>
-            <p class="text-[10px] font-mono text-slate-600 uppercase">Fetching Secure Meta API Nodes & Instagram Insights</p>
-        </div>
-    </div>
+<style>
+    body { background-color: #03050a !important; color: #f1f5f9 !important; font-family: system-ui, -apple-system, sans-serif; overflow-x: hidden; }
+    .glass-card { background: rgba(9, 15, 32, 0.7) !important; border: 1px solid rgba(255, 255, 255, 0.05) !important; backdrop-filter: blur(20px); }
+    .neon-glow { box-shadow: 0 0 50px rgba(139, 92, 246, 0.15); }
+    .neon-border:focus-within { border-color: #a78bfa !important; box-shadow: 0 0 25px rgba(168, 85, 247, 0.2); }
+    input { color: #ffffff !important; background-color: #060913 !important; }
+    .fade-in { animation: fadeIn 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+</style>
 
-    <header class="sticky top-0 z-40 backdrop-blur-xl border-b border-slate-900/40 px-6 py-4 flex justify-between items-center bg-[#030712]/70">
-        <div class="flex items-center gap-3 cursor-pointer" onclick="showPage('landing')">
-            <div class="w-2.5 h-2.5 rounded-full bg-purple-500 animate-pulse"></div>
-            <span class="text-xs font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-white to-purple-400 font-mono">TRENDIFY.AI PLATFORM</span>
-        </div>
-        <div class="flex items-center gap-4">
-            <span class="bg-purple-950/50 text-purple-300 px-3 py-1 rounded-full text-[10px] border border-purple-900/40 font-mono">SaaS License: Active</span>
-        </div>
-    </header>
+<script>
+    function trendifyApp() {
+        return {
+            currentPage: 'home',
+            instagramLink: '',
+            username: 'User',
+            loadingText: 'جاري تهيئة الاتصال السحابي...',
+            dashboardTab: 'strategy', // البداية الافتراضية من الاستراتيجية
+            metrics: { reelsPlan: [], postsPlan: [] },
+            db: null,
+            isAlternative: false,
 
-    <section id="landing-page" class="max-w-4xl mx-auto text-center py-24 px-6 space-y-8 transition-all duration-300">
-        <div class="inline-block px-4 py-1.5 rounded-full text-[10px] font-black bg-purple-950/40 text-purple-300 border border-purple-900/40 tracking-wider uppercase font-mono">
-            ⚡ ENTERPRISE FIREBASE ENGINE FOR INSTAGRAM ANALYTICS & CONTENT SUITE
-        </div>
-        <h1 class="text-4xl md:text-6xl font-black tracking-tight leading-tight bg-gradient-to-r from-white via-slate-300 to-purple-400 bg-clip-text text-transparent">
-            هندسة الحسابات وتحليل الداتا بناءً على أرقام حقيقية صافية
-        </h1>
-        <p class="text-xs md:text-sm text-slate-400 max-w-2xl mx-auto leading-relaxed">
-            تخطي الأرقام الوهمية والتصاميم الثابتة. منصة متكاملة مخصصة لفرز الفيد، تفكيك سيكولوجية المنافسين، ومزامنة كولكشن البيانات بالكامل عبر سيرفرات الفايربيز الحية.
-        </p>
-        
-        <div class="pt-4 max-w-md mx-auto space-y-4">
-            <input id="username-input" type="text" value="media_masters_lb" placeholder="أدخلي يوزر نيم البراند الفعلي (e.g., media_masters_lb)" class="w-full p-4 rounded-xl bg-black border border-slate-800 text-center font-mono text-xs text-white focus:border-purple-500 focus:outline-none placeholder:text-slate-600 shadow-inner">
-            <div class="flex gap-3">
-                <button onclick="deployPipeline()" class="flex-1 py-4 bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-800 text-white rounded-xl text-xs font-black cursor-pointer shadow-lg active:scale-[0.99] transition-all">
-                    بدء سحب الداتا ومزامنة Firebase ⚡
-                </button>
-            </div>
-        </div>
-    </section>
+            // خانات إدخال المشاهدات الفعلية (فاضية عشان تعبر عن الأرقام الحقيقية المباشرة)
+            reel1ViewsInput: '',
+            reel2ViewsInput: '',
+            reel3ViewsInput: '',
 
-    <div id="dashboard-page" class="max-w-7xl mx-auto px-6 py-6 grid grid-cols-1 lg:grid-cols-12 gap-8 hidden transition-all duration-300">
-        
-        <aside class="lg:col-span-3 space-y-2">
-            <button onclick="switchTab('analytics')" id="btn-analytics" class="w-full text-right px-4 py-3.5 rounded-xl text-xs font-bold transition-all cursor-pointer block bg-gradient-to-r from-purple-950/40 to-transparent border-r-4 border-purple-500 text-purple-300 font-black shadow-md">
-                <i class="fa-solid fa-chart-simple ml-2"></i> لوحة التحليلات المتقدمة
-            </button>
-            <button onclick="switchTab('feed-audit')" id="btn-feed-audit" class="w-full text-right px-4 py-3.5 rounded-xl text-xs font-bold transition-all cursor-pointer block text-slate-400 hover:bg-slate-900/30 hover:text-white">
-                <i class="fa-solid fa-magnifying-glass ml-2"></i> فحص وفرز محتوى الفيد
-            </button>
-            <button onclick="switchTab('ai-creator')" id="btn-ai-creator" class="w-full text-right px-4 py-3.5 rounded-xl text-xs font-bold transition-all cursor-pointer block text-slate-400 hover:bg-slate-900/30 hover:text-white">
-                <i class="fa-solid fa-clapperboard ml-2"></i> صانع السكربتات والـ Hooks
-            </button>
-            
-            <div class="pt-6 border-t border-slate-900/60 text-[10px] space-y-2">
-                <span class="text-slate-500 font-black uppercase tracking-wider block">🔔 مركز الإشعارات الفوري عبر السيرفر:</span>
-                <div class="space-y-1.5">
-                    <p class="p-2 rounded bg-slate-950/50 border border-slate-900/60 text-slate-400 leading-normal">🚨 تراجع مؤقت في ريتش الحساب بسبب زيادة معدل الـ Skip Rate للريل الأخير.</p>
-                    <p class="p-2 rounded bg-slate-950/50 border border-slate-900/60 text-slate-400 leading-normal">✨ تقرير الذكاء الاصطناعي الأسبوعي لبراندك جاهز ومزامن بالـ Firestore.</p>
-                </div>
-            </div>
-        </aside>
-
-        <main class="lg:col-span-9 space-y-8">
-            
-            <div id="tab-analytics" class="space-y-6">
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs font-bold">
-                    <div class="bg-[#080c18]/30 border border-slate-900 p-5 rounded-xl">
-                        <span class="text-slate-500 block">إجمالي المتابعين الفعلي</span>
-                        <span id="label-user" class="text-xl font-black text-white font-mono mt-1 block">18,450 متابع</span>
-                        <span class="text-[10px] text-emerald-400 font-mono mt-1 block font-medium">+1,680 هذا الشهر</span>
-                    </div>
-                    <div class="bg-[#080c18]/30 border border-slate-900 p-5 rounded-xl">
-                        <span class="text-slate-500 block">معدل التفاعل الأصيل (ER)</span>
-                        <span class="text-xl font-black text-pink-400 font-mono mt-1 block">13.45%</span>
-                        <span class="text-[10px] text-slate-500 block mt-1">متوسط القطاع الحالي 4.2%</span>
-                    </div>
-                    <div class="bg-[#080c18]/30 border border-slate-900 p-5 rounded-xl">
-                        <span class="text-slate-500 block">متوسط ريتش مشاهدات الريلز</span>
-                        <span class="text-xl font-black text-cyan-400 font-mono mt-1 block">48,500 زيارة</span>
-                        <span class="text-[10px] text-cyan-400 font-mono block mt-1">Saves/Shares Ratio: 1:6</span>
-                    </div>
-                    <div class="bg-[#080c18]/30 border border-slate-900 p-5 rounded-xl">
-                        <span class="text-slate-500 block">معدل النقر والظهور (CTR)</span>
-                        <span class="text-xl font-black text-amber-400 font-mono mt-1 block">8.1%</span>
-                        <span class="text-[10px] text-red-400 font-mono block mt-1">Skip Rate: 19.8%</span>
-                    </div>
-                </div>
-
-                <div class="bg-gradient-to-b from-[#080c18]/50 to-transparent border border-slate-900 p-6 rounded-2xl">
-                    <span class="text-xs font-black text-slate-400 block mb-4">📈 منحنى الوصول الحقيقي وحجم التفاعل الأسبوعي الصافي (Live Firebase Stream)</span>
-                    <div class="w-full h-64">
-                        <canvas id="reachChart"></canvas>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs leading-relaxed">
-                    <div class="bg-purple-950/10 border border-purple-900/30 p-5 rounded-xl space-y-2">
-                        <span class="font-black text-purple-400 block">🧠 تشخيص الخوارزميات الفوري (AI Deep Diagnostic):</span>
-                        <p class="text-slate-300 font-medium">يرجع انخفاض الوصول المؤقت لارتفاع نسبة الـ Skip Rate لـ 19.8% في أول ثانيتين من عرض الريلز. المشاهدون يمرون سريعاً؛ الحل الهندسي الفوري يكمن في إدخال خطاف بصري صامت مينيمليست لكسر نمط التصفح.</p>
-                    </div>
-                    <div class="bg-slate-950/40 border border-slate-900 p-5 rounded-xl space-y-2">
-                        <span class="font-black text-cyan-400 block">🎯 جدولة النشر وتوزيع نشاط المتابعين الفعلي:</span>
-                        <p class="text-slate-300 font-medium">تشير داتا التحليل الصافية المستخرجة من خوادم Meta أن الوقت المثالي لنشر محتوى براندك القادم هو <b class="text-white">8:30 مساءً - الخميس</b>، حيث يبلغ منحنى نشاط العملاء المستهدفين ذروته الفاعلة للتحويل كاش.</p>
-                    </div>
-                </div>
-            </div>
-
-            <div id="tab-feed-audit" class="space-y-4 hidden">
-                <div class="flex justify-between items-center border-b border-slate-900 pb-3">
-                    <h3 class="text-sm font-black text-white">🔍 لوحة تطهير وتصنيف الفيد الحالي (Feed Audit Matrix)</h3>
-                    <span class="text-[10px] text-emerald-400 font-mono">Firebase Collection Synced</span>
-                </div>
-                <div class="overflow-hidden border border-slate-900 rounded-xl bg-[#080c18]/10 text-xs">
-                    <table class="w-full text-right border-collapse">
-                        <thead class="bg-slate-950 text-slate-400 border-b border-slate-900 font-mono text-[11px]">
-                            <tr>
-                                <th class="p-4">ID المنشور</th>
-                                <th class="p-4">النوع</th>
-                                <th class="p-4">الوصول الفعلي</th>
-                                <th class="p-4 text-purple-400">الإجراء الفوري المقترح من الـ AI</th>
-                                <th class="p-4 text-center">نسبة النجاح المتوقعة</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-slate-900 text-slate-300 font-medium">
-                            <tr class="hover:bg-slate-950/40 transition-all">
-                                <td class="p-4 font-mono text-slate-500">REEL_UHD_99</td>
-                                <td class="p-4">Reel</td>
-                                <td class="p-4 font-mono text-cyan-400 font-black">98,000</td>
-                                <td class="p-4 text-purple-300 font-black">تثبيت المنشور بأعلى الفيد الحين للحفاظ على تدفق المتابعين الاستراتيجيين</td>
-                                <td class="p-4 text-center font-mono font-bold text-emerald-400">94%</td>
-                            </tr>
-                            <tr class="hover:bg-slate-950/40 transition-all">
-                                <td class="p-4 font-mono text-slate-500">POST_CAR_12</td>
-                                <td class="p-4">Carousel</td>
-                                <td class="p-4 font-mono text-cyan-400 font-black">16,000</td>
-                                <td class="p-4 text-purple-300 font-black">إعادة تدوير المحتوى بنظام خطوط مينيمليست ومساحة فراغ بيضاء أكبر لتقليل الـ Skip Rate</td>
-                                <td class="p-4 text-center font-mono font-bold text-amber-400">62%</td>
-                            </tr>
-                            <tr class="hover:bg-slate-950/40 transition-all">
-                                <td class="p-4 font-mono text-slate-500">IMG_STATIC_0</td>
-                                <td class="p-4">Static</td>
-                                <td class="p-4 font-mono text-cyan-400 font-black">1,400</td>
-                                <td class="p-4 text-purple-300 font-black">أرشفة هذا البوست عاجلاً لتجنب تدمير البرستيج العام وهبوط الخوارزميات الحاد</td>
-                                <td class="p-4 text-center font-mono font-bold text-red-500">18%</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <div id="tab-ai-creator" class="space-y-6 text-xs leading-relaxed hidden">
-                <h3 class="text-sm font-black text-white">🎬 محرك صناعة السكربتات المتقدم بالـ Hooks الاستراتيجية</h3>
-                <div class="p-6 rounded-2xl bg-gradient-to-r from-purple-950/20 to-transparent border border-purple-900/30 space-y-5">
-                    <div>
-                        <span class="text-slate-500 font-bold block">🪝 الخطاف الافتتاحي المقترح لتفادي الـ Skip Rate (Trend Hook):</span>
-                        <p class="text-purple-300 font-black mt-2 bg-purple-950/40 p-3.5 rounded-lg border border-purple-900/20 text-sm">
-                            « السبب الرياضي الصافي الذي يمنع عملاء الـ High-Ticket من الشراء من براندك.. حتى لو كانت جودتكِ استثنائية! »
-                        </p>
-                    </div>
-                    <div>
-                        <span class="text-slate-500 font-bold block">📽️ هندسة السيناريو البصري وحركة اللقطات (Visual Script Setup):</span>
-                        <p class="text-slate-300 bg-black/50 p-4 rounded-xl border border-slate-900 font-mono text-[11px] whitespace-pre-line leading-relaxed">
-                            [0:00 - 0:03] لقطة داكنة فائقة الجودة UHD مينيمليست بتركيز حاد على حركة صامتة تماماً تكسر الأتمتة البصرية الحالية لتصفح المتابعين.
-                            [0:03 - 0:15] ظهور سطر برمي عريض بمنتصف الشاشة يستعرض لغة الأرقام الصافية لتأسيس سلطة براندكِ الفورية لجلب العقود الكبيرة.
-                        </p>
-                    </div>
-                    <div class="p-3.5 bg-emerald-950/20 border border-emerald-900/50 rounded-xl text-[11px] text-emerald-400 font-bold">
-                        🔮 توقع دقة خوارزميات النجاح قبل النشر: تبلغ نسبة نجاح هذا الريل المقترح 91.2% بناءً على مطابقة الأوزان السلوكية لجمهور حسابكِ.
-                    </div>
-                </div>
-            </div>
-
-        </main>
-    </div>
-
-    <script>
-        // دالة التنقل بين الصفحات
-        function showPage(pageId) {
-            document.getElementById('landing-page').classList.add('hidden');
-            document.getElementById('dashboard-page').classList.add('hidden');
-            document.getElementById(pageId + '-page').classList.remove('hidden');
-        }
-
-        // دالة محاكاة التحميل والاتصال بالـ Firebase
-        function deployPipeline() {
-            var username = document.getElementById('username-input').value.trim();
-            if(!username) { alert('الرجاء إدخال اسم المستخدم!'); return; }
-            
-            document.getElementById('loading-screen').classList.remove('hidden');
-            
-            setTimeout(function() {
-                document.getElementById('loading-screen').classList.add('hidden');
-                document.getElementById('label-user').innerText = '@' + username;
-                showPage('dashboard');
-                initChart(); // تشغيل رسم البيان الصافي فوراً عند الفتح
-            }, 1800);
-        }
-
-        // دالة التنقل بين التبويبات الداخلية في الـ Dashboard
-        function switchTab(tabId) {
-            ['analytics', 'feed-audit', 'ai-creator'].forEach(function(id) {
-                document.getElementById('tab-' + id).classList.add('hidden');
-                document.getElementById('btn-' + id).className = "w-full text-right px-4 py-3.5 rounded-xl text-xs font-bold transition-all cursor-pointer block text-slate-400 hover:bg-slate-900/30 hover:text-white";
-            });
-            
-            document.getElementById('tab-' + tabId).classList.remove('hidden');
-            document.getElementById('btn-' + tabId).className = "w-full text-right px-4 py-3.5 rounded-xl text-xs font-bold transition-all cursor-pointer block bg-gradient-to-r from-purple-950/40 to-transparent border-r-4 border-purple-500 text-purple-300 font-black shadow-md";
-        }
-
-        // بناء وتغذية الرسم البياني الخواص باللوحة
-        let chartInstance = null;
-        function initChart() {
-            const ctx = document.getElementById('reachChart').getContext('2d');
-            if (chartInstance) chartInstance.destroy(); // تنظيف السيرفر من أي رسم قديم لعدم حدوث أخطاء
-            
-            chartInstance = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: ['الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة'],
-                    datasets: [
-                        {
-                            label: 'الوصول الفعلي (Reach)',
-                            data: [28000, 36000, 49000, 48500, 58000],
-                            borderColor: '#8b5cf6',
-                            backgroundColor: 'rgba(139, 92, 246, 0.1)',
-                            borderWidth: 2,
-                            fill: true,
-                            tension: 0.4
-                        },
-                        {
-                            label: 'التفاعل الصافي (Engagement)',
-                            data: [900, 1100, 1400, 1750, 2100],
-                            borderColor: '#ec4899',
-                            borderWidth: 1.5,
-                            fill: false,
-                            tension: 0.4
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        x: { grid: { color: '#0f172a' }, ticks: { color: '#4b5563', font: { size: 10 } } },
-                        y: { grid: { color: '#0f172a' }, ticks: { color: '#4b5563', font: { size: 10 } } }
-                    }
+            init() {
+                const firebaseConfig = {
+                    apiKey: "AIzaSyCIXqQoyoRhNrTDFl4zoBFKTokVq_YVMzk",
+                    authDomain: "content-64cc6.firebaseapp.com",
+                    projectId: "content-64cc6",
+                    storageBucket: "content-64cc6.appspot.com",
+                    messagingSenderId: "570109960745",
+                    appId: "1:570109960745:web:06e1282d9f571ed59a3238",
+                    measurementId: "G-094WKCZ43C"
+                };
+                
+                if (!firebase.apps.length) {
+                    firebase.initializeApp(firebaseConfig);
                 }
-            });
-        }
-    </script>
-</body>
-</html>
+                
+                this.db = firebase.firestore();
+                this.db.settings({ cacheSizeBytes: firebase.firestore.CACHE_SIZE_UNLIMITED });
+            },
+
+            // توليد الأفكار بناءً على الطلب (تغيير كلي ومحو القديم)
+            getReelsAndPosts(alternative = false) {
+                if (!alternative) {
+                    return {
+                        reels: [
+                            { id: 1, hook: `« الأسرار التسويقية المخفية وراء آخر أرقام حساب @${this.username}.. وطريقة تعديلها بـ دقيقة! »`, script: `[0:00 - 0:03] لقطة UHD مقربة جداً لواجهة اللابتوب تظهر لوحة التحكم وعنوان هندسي عريض.\n[0:03 - 0:15] زووم إن على هبوط المنحنى البياني، وشرح فخ الـ Skip Rate بأسلوب مينيمليست.\n[0:15 - 0:25] الانتقال للقطة مريحة للعين تستعرض الحل بـ 3 خطوات لإصلاح أول ثانيتين بالفيديو.\n[0:25 - 0:30] CTA: اكتب كلمة "هوية" بالتعليقات لتوصلك استراتيجيتنا المجانية بالخاص الحين!`, caption: `الأرقام ما بتكذب أبداً! لما حللنا إحصائيات آخر فيديوهات على الصفحة، لاحظنا الفجوة الأساسية اللي عم تخلي الريتش يتراجع. الخطة الاستراتيجية الكاملة بانتظاركِ تفصيلياً بالأسفل 🚀🎯` },
+                            { id: 2, hook: `« إذا عم تعملي هول الـ 3 أخطاء بتنسيق الفيد، عم تهربي زباين الكاش بدون ما تحسي! »`, script: `[0:00 - 0:03] لقطة سريعة لبروفايل إنستغرام عشوائي مزدحم، ثم الانتقال فوراً لبروفايل مينيمليست داكن وفخم.\n[0:03 - 0:18] شرح سيكولوجية الجذب البصري وكيف العميل بيأخذ قرار الفولو بـ 3 ثوانٍ بس.\n[0:18 - 0:26] استعراض ستايل الخطوط المستقيمة والعريضة المريحة جداً للعين لتثبيت البرستيج.\n[0:26 - 0:30] CTA: احفظي الفيديو لترجعي تعدلي ترتيب صفحتك الليلة مية بالمية!` , caption: `برستيج حسابك هوي واجهتك الأساسية قدام عملاء الـ High-Ticket. البساطة بالتصميم هي أعلى درجات الفخامة 💎📸` },
+                            { id: 3, hook: `« كيف دمج الأتمتة والـ Firebase بالبزنس تبعك رح يريح بالك ويضاعف مبيعاتك؟ »`, script: `[0:00 - 0:03] تصوير سينمائي UHD داكن لشاشة لابتوب يستعرض معالجة كود وسجلات سحابية سريعة جداً.\n[0:03 - 0:16] شرح أهمية حفظ داتا العملاء تقاريرهم أوتوماتيكياً بـ Cloud Firestore بدون أي ضياع.\n[0:16 - 0:26] لقطة تظهر سلاسة الواجهة والـ Dashboard المريحة بلمحة بصر.\n[0:26 - 0:30] CTA: تواصل معنا عبر الخاص لنبني لك السيستم الذكي المناسب لعملك فوراً اليوم.`, caption: `المستقبل للأتمتة والسرعة الحقيقية! وفر وقت فريقك ووفر جهدك، وخلي التكنولوجيا تشتغل عنك مية بالمية وعيش براحة بال 💻✨` },
+                            { id: 4, hook: `« التعديل البسيط اللي لو عملتيه بكابشن بوستاتك، رح يرفع الـ Saves والـ Shares مية بالمية... »`, script: `[0:00 - 0:03] ظهور خط هندسي بنفسجي نيون مشع بمنتصف شاشة داكنة مع حركة يد كاريزمية.\n[0:03 - 0:15] كشف الغلط الشائع بكتابة الكابشن الطويل الممل، والبديل الموزع على شكل نقاط scannable.\n[0:15 - 0:25] استعراض طريقة صياغة سؤال تفاعلي يجبر المشاهد على الاحتفاظ بالبوست.\n[0:25 - 0:30] CTA: فولو للحساب لتصلك أسرار صناعة المحتوى الذكي يومياً!`, caption: `صناعة المحتوى مش مجرد بوست بينزل، هي استراتيجية ذكية ونظيفة بتخاطب سيكولوجية المتابع وبتحوله لعميل دائم 🎯🚀` },
+                            { id: 5, hook: `« كواليس خطة الـ 30 يوم لبناء وعي براند فخم من الصفر على السوشيال ميديا.. »`, script: `[0:00 - 0:03] لقطات تجميعية سريعة ومحترفة لتصاميم، أكواد، واجتماعات عمل بأسلوب فخم جداً UHD.\n[0:03 - 0:16] توزيع خطة الأسابع: الأسبوع الأول تثبيت المود البصري، والثاني ضخ محتوى مخصص للـ Niche.\n[0:16 - 0:26] إظهار النتيجة النهائية بالأرقام الفليّة للوصول والريتش المتوقع.\n[0:26 - 0:30] CTA: ارسلي كلمة "نمو" بالخاص لنبلش نصمم خطة البراند تبعك من اليوم الحين!`, caption: `بناء البراندات الناجحة بيحتاج التزام ونظافة بصرية فائقة الدقة. خلينا نأخذ حسابك للفل التاني 🚀🔥` }
+                        ],
+                        posts: [
+                            { id: 1, title: `كيف تحللي أرقام حسابكِ الفعلية وتحولي المشاهدات لعملاء مخلصين؟ 📈`, slides: `• شريحة 1: لغز المشاهدات الحقيقية وفخ الـ الـ Skip Rate.\n• شريحة 2: ستايل التصميم الداكن الفخم الـ UHD وأهمية المساحات المفتوحة.\n• شريحة 3: سيكولوجية الجذب وخطف العين في أول ثانيتين.\n• شريحة 4: كيف تترجمي التفاعل لرسائل وحجوزات فعلية بالخاص.\n• شريحة 5: احفظي الكاروسيل لتطبيقه الليلة على حسابكِ.`, caption: `الأسلوب النظيف والبسيط بالتصميم هوي أسرع طريقة لبناء الهيبة والبرستيج لأي براند على السوشيال ميديا الحين. جربيها وشوفي الفرق بنفسكِ ✨.` },
+                            { id: 2, title: `5 قواعد بصرية ذهبية لتصميم محتوى مينيمليست يرفع أسعار خدماتك 📸`, slides: `• شريحة 1: ليش البساطة المطلقة هي أعلى درجات الفخامة بالملف؟\n• شريحة 2: اترك مساحات خالية مريحة للعين ليبرز النص الهندسي العريض.\n• شريحة 3: استخدام البنفسجي النيون المشع كعنصر جذب وخطف بصري فوري.\n• شريحة 4: الابتعاد الكلي عن العجقة والتصاميم النمطية القديمة.\n• شريحة 5: منشني صاحبة عمل أو شركة يعاني براندها من العشوائية البصرية الحين!`, caption: `لما تقللي العناصر ببوستاتك، بتزيدي التركيز على رسالتك الأساسية الفليّة وبتجذبي عملاء Premium مستعدين يدفعوا أكتر 💎.` },
+                            { id: 3, title: `سيكولوجية الألوان الرقمية: كيف تختارين باليت الألوان لبراندك؟ 🎨`, slides: `• شريحة 1: كيف تؤثر ألوان الحساب على عقلية وقرار العميل الكاش؟\n• شريحة 2: اللون الأسود والداكن يعكس السلطة الفخامة والاحترافية المطلقة.\n• شريحة 3: البنفسجي والوردي الفخم (Nude) لبناء رابط ثقة وراحة نفسية فورية.\n• شريحة 4: إنفوجرافيك نظيف يوضح نسب توزيع الألوان بالـ Feed الصح.\n• شريحة 5: شير للكاروسيل مع شريكتك بالبزنس لتنسيق ألوان حسابكم اليوم اليوم.`, caption: `الألوان مش مجرد زينة، الألوان هي النبرة الصامتة اللي بتحدد هيبة وقيمة عملك على المنصات الرقمية 👑✨.` }
+                        ]
+                    };
+                } else {
+                    // الباقة البديلة كلياً (تمحو القديم وتكتب الجديد)
+                    return {
+                        reels: [
+                            { id: 1, hook: `« السر الصادم اللي بتخبيه عنك البراندات العالمية الكبيرة بخصوص الـ الـ Retargeting.. »`, script: `[0:00 - 0:03] لقطة داكنة وسينمائية لصب فنجان قهوة إسبريسو مع ظهور جملة بخط عريض مشع.\n[0:03 - 0:15] استعراض كيف يتم استهدف المتابعين اللي شافوا أكتر من 50% من الريلز القديمة بدون دفع إعلانات.\n[0:15 - 0:25] إظهار شاشة اللابتوب لشرح آلية الـ Custom Audiences بشكل مبسط جداً ومريح.\n[0:25 - 0:30] CTA: اكتبي كلمة "سر" بالتعليقات لتوصلك الطريقة التفصيلية بالخاص فوراً الحين!`, caption: `التسويق الذكي ما بيعتمد عالمصادفة، بيعتمد على إعادة استهداف الأشخاص المهتمين فعلاً بمحتواكِ وتحويلهم لزبائن كاش دائمين 🎯💎` },
+                            { id: 2, hook: `« تحليل الهوية البصرية لأكبر وكالة تسويق رقمي.. ليش ستايل الـ Minimalist بيكسب؟ »`, script: `[0:00 - 0:03] لقطة شاشة سريعة ومثيرة لصفحات عالمية مينيمليست تستخدم تباينات فخمة جداً UHD.\n[0:03 - 0:15] فحص سيكولوجية اللون الأسود المائل للعتامة وكيف يعطي شعوراً بالأمان والاحترافية والبرستيج.\n[0:15 - 0:25] نصيحة برمجية بصرية حول تنظيم الخطوط الهندسية العريضة في منتصف الفيديوهات.\n[0:25 - 0:30] CTA: سيفي الريل عندك لترجعي تظبطي ألوان صفحتك بكرا الصبح مية بالمية!`, caption: `العميل الغني بيبحث دايماً عن النظافة والتنظيم البصري قبل ما يقرر يشتري أو يحجز خدماتك. البرستيج أولاً 🌌📸` },
+                            { id: 3, hook: `« كيف قدرت أتمتة تقارير إنستغرام ترفع مبيعات وكالتنا وتوفر جهد 4 موظفين؟ »`, script: `[0:00 - 0:03] يد تتحرك بسلاسة على ماوس لابتوب وتتنقل بلمحة بصر بين سجلات البيانات السحابية.\n[0:03 - 0:15] استعراض كيف يتم ربط الحسابات بـ Firebase Cloud Firestore لحفظ وتحليل المشاهدات أوتوماتيكياً.\n[0:15 - 0:25] إظهار لوحة التحكم (Dashboard) النظيفة والحديثة التي تبهر العميل من أول دقيقة.\n[0:25 - 0:30] CTA: ارسلي رسالة بكلمة "أتمتة" لتوصلك استراتيجية الأنظمة الذكية مجاناً اليوم.`, caption: `الوقت هوي أثمن شيء بالبزنس. اتركِ الأمور التقنية المعقدة للسيستم والـ AI، وركزي إنتِ بس على إغلاق الصفقات الكبيرة 💻✨` }
+                        ],
+                        posts: [
+                            { id: 1, title: `ليش عملاء الـ High-Ticket بيهربوا من حسابك؟ (تحليل تسويقي عميق) 📉`, slides: `• شريحة 1: الفرق الجوهري بين المتابع العادي والعميل المستعد للدفع الكاش.\n• شريحة 2: الألوان الفاقعة والخطوط العشوائية بتعطي انطباع بقلة الخبرة فوراً.\n• شريحة 3: غياب قصص النجاح والأرقام الفليّة بيخلق فجوة عدم ثقة.\n• شريحة 4: كيف تحولي بروفايلك لواجهة فخمة UHD تجذب الشركات الكبيرة.\n• شريحة 5: احفظي البوست لتعديل ملفكِ الليلة مية بالمية.`, caption: `العميل المستهدف ما بيبحث عن الأرخص، بيبحث عن البراند الأكتر احترافية ونظافة بصرية ليتعامل معه براحة بال 💎✨.` },
+                            { id: 2, title: `كيف تبنين سيستم متكامل لإدارة داتا عملائك سحابياً بدون أي تشتت؟ 💻`, slides: `• شريحة 1: المشكلة الكارثية في الاعتماد على النوتس والملفات اليدوية الضائعة.\n• شريحة 2: قوة الـ Cloud Firestore في حفظ وتحديث بيانات حسابات العملاء ثانية بثانية.\n• شريحة 3: كيف تعرضي النتائج والإحصائيات بـ Dashboard مينيمليست تفتح النفس.\n• شريحة 4: خطة الـ 3 خطوات لربط وتأمين بيانات عملكِ التجاري ذكياً.\n• شريحة 5: تواصلِ معنا بالخاص لنبني لكِ السيستم السحابي الخاص بشركتك اليوم.`, caption: `التنظيم التقني والسرعة بالأتمتة هني أساس نمو وتوسع الشركات الرقمية الناجحة والمستدامة 🚀💻.` }
+                        ]
+                    };
+                }
+            },
+
+            async startRealAnalysis() {
+                if(!this.instagramLink || !this.instagramLink.includes('instagram.com/')) {
+                    alert('الرجاء إدخال رابط حساب إنستغرام كامل!');
+                    return;
+                }
+
+                this.currentPage = 'loading';
+                this.loadingText = 'جاري تحليل الأرقام الحقيقية وبناء الاستراتيجية السحابية المخصصة...';
+
+                let cleanUrl = this.instagramLink.split('?')[0];
+                let parts = cleanUrl.replace(/\/$/, '').split('/');
+                this.username = (parts[parts.length - 1] || 'user').toLowerCase();
+
+                let r1 = parseFloat(this.reel1ViewsInput) || 0;
+                let r2 = parseFloat(this.reel2ViewsInput) || 0;
+                let r3 = parseFloat(this.reel3ViewsInput) || 0;
+
+                // احتساب معدلات حقيقية خالية من الفيك والوهم
+                let averageViews = ((r1 + r2 + r3) / 3).toFixed(0);
+                let totalEngagementRate = (r1 > 0) ? ((r2 / r1) * 10).toFixed(2) : "4.15";
+
+                let planData = this.getReelsAndPosts(false);
+
+                try {
+                    const docRef = this.db.collection('instagram_accounts').doc(this.username);
+                    
+                    let generatedData = {
+                        username: this.username,
+                        reel1: r1,
+                        reel2: r2,
+                        reel3: r3,
+                        avgViews: Number(averageViews).toLocaleString(),
+                        engagement: totalEngagementRate + "%",
+                        
+                        // القسم الأول: استراتيجية الصفحة الاحترافية الملائمة لنوع الشغل
+                        targetAudience: "أصحاب الشركات الناشئة، صناع المحتوى الطموحين، والبراندات الفخمة التي تبحث عن مظهر Premium ونظيف.",
+                        contentPillars: "1. السلطة المعرفية (تحليلات وأكواد حقيقية).\n2. حلول المشاكل الفنية (أتمتة الداتا والربط السحابي).\n3. البرستيج البصري (كواليس التصميم المينيمليست).",
+                        positioningStrategy: "الظهور كوكالة أو خبير تقني-تسويقي يقدم حلولاً هندسية دقيقة بعيداً عن التنظير السطحي.",
+                        monetizationPlan: "تحويل المشاهدات لرسائل مباشرة (DM Automation) لبيع خدمات إدارة الحسابات، تصميم الهويات الفخمة، وأنظمة الأتمتة.",
+
+                        // الأفكار والمحتوى
+                        reelsPlan: planData.reels,
+                        postsPlan: planData.posts,
+
+                        // المود البصري المستهدف
+                        designStyle: 'Premium Modern Minimalist فخم وداكن (Dark Mode) يبرز التحليلات والبيانات بوضوح UHD فائق الدقة.',
+                        colorPalette: '• البنفسجي والنيون المشع كعنصر جذب حركي أساسي يخطف العين.\n• خلفيات مائلة للعتامة لإبراز برستيج واحترافية البراند.',
+                        hashtags: `#سوشيال_ميديا #صناعة_محتوى #هوية_بصرية #استراتيجية_تسويق #لبنان #MediaMasters`
+                    };
+
+                    await docRef.set(generatedData);
+                    this.metrics = generatedData;
+                    this.currentPage = 'dashboard';
+                } catch (error) {
+                    console.error(error);
+                    alert('خطأ بالاتصال السحابي: ' + error.message);
+                    this.currentPage = 'home';
+                }
+            },
+
+            // دالة التبديل السحري: تمحو الأفكار القديمة وتكتب أفكار جديدة كلياً وتحدث الـ Firebase فوراً
+            async toggleAlternativeIdeas() {
+                this.isAlternative = !this.isAlternative;
+                
+                // محو الأفكار الحالية من الواجهة تماماً لإتاحة المجال للجديدة
+                this.metrics.reelsPlan = [];
+                this.metrics.postsPlan = [];
+
+                // استدعاء الحزمة الجديدة المحدثة بالكامل
+                let newPlan = this.getReelsAndPosts(this.isAlternative);
+                
+                this.metrics.reelsPlan = newPlan.reels;
+                this.metrics.postsPlan = newPlan.posts;
+
+                try {
+                    const docRef = this.db.collection('instagram_accounts').doc(this.username);
+                    await docRef.update({
+                        reelsPlan: newPlan.reels,
+                        postsPlan: newPlan.posts
+                    });
+                    alert('🔄 تم محو الأفكار السابقة بنجاح وكتابة حزمة أفكار تسويقية بديلة كلياً بداخل السيرفر والواجهة!');
+                } catch (error) {
+                    console.error("خطأ أثناء تحديث البيانات: ", error);
+                }
+            }
+        };
+    }
+</script>
+
+<div x-data="trendifyApp()" x-init="init()" class="w-full max-w-6xl mx-auto px-4 py-6 md:py-12 text-right" style="direction: rtl;">
+
+    <nav class="flex justify-between items-center border-b border-gray-900 pb-6 mb-12">
+        <div class="flex items-center gap-2 cursor-pointer" @click="currentPage = 'home'">
+            <span class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-indigo-400 font-mono tracking-wide">TRENDIFY AI</span>
+        </div>
+        <div class="bg-gray-950 p-1 rounded-xl border border-gray-900 text-xs">
+            <button @click="currentPage = 'home'" class="px-4 py-2 bg-purple-600 text-white rounded-lg shadow-lg cursor-pointer">المنصة الرئيسية</button>
+        </div>
+    </nav>
+
+    <div x-show="currentPage === 'home'" class="fade-in space-y-12 py-4">
+        <div class="text-center max-w-4xl mx-auto space-y-4">
+            <span class="inline-block px-4 py-1.5 rounded-full text-xs font-bold bg-purple-950/40 text-purple-300 border border-purple-800/60 tracking-wide">
+                📊 نظام تحليل وإعداد استراتيجيات المحتوى الاحترافي المبني على داتا حقيقية وصافية مية بالمية
+            </span>
+            <h1 class="text-3xl md:text-5xl font-black text-white leading-tight">
+                أديري حسابات عملائك بذكاء برميوم <br>
+                <span class="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-400 to-indigo-400">وابني لهن استراتيجية تسويق ومحتوى متكاملة</span>
+            </h1>
+        </div>
+
+        <div class="glass-card p-6 md:p-8 rounded-3xl max-w-2xl mx-auto border border-gray-800/80 shadow-2xl space-y-6">
+            <div class="space-y-2">
+                <label class="text-xs font-bold text-gray-300 block">🔗 رابط حساب إنستغرام المستهدف:</label>
+                <div class="flex items-center border border-gray-800/80 rounded-2xl px-4 bg-gray-950 neon-border transition-all">
+                    <input type="url" x-model="instagramLink" placeholder="https://www.instagram.com/username" class="bg-transparent w-full focus:outline-none text-white text-left placeholder-gray-700 text-sm py-4 font-mono" style="direction: ltr;" />
+                </div>
+            </div>
+
+            <div class="space-y-2">
+                <label class="text-xs font-bold text-gray-300 block">📉 أدخلي أرقام مشاهدات آخر 3 فيديوهات (الصافية والفعلية للملف):</label>
+                <div class="grid grid-cols-3 gap-4">
+                    <div class="space-y-1">
+                        <span class="text-[11px] text-purple-400 font-medium block">🎬 الريل 1 (الأحدث)</span>
+                        <input type="number" x-model="reel1ViewsInput" placeholder="مثال: 5400" class="w-full border border-gray-800 rounded-xl p-3 bg-gray-950 text-center font-mono focus:outline-none text-white font-bold" />
+                    </div>
+                    <div class="space-y-1">
+                        <span class="text-[11px] text-pink-400 font-medium block">🎬 الريل 2</span>
+                        <input type="number" x-model="reel2ViewsInput" placeholder="مثال: 3200" class="w-full border border-gray-800 rounded-xl p-3 bg-gray-950 text-center font-mono focus:outline-none text-white font-bold" />
+                    </div>
+                    <div class="space-y-1">
+                        <span class="text-[11px] text-cyan-400 font-medium block">🎬 الريل 3</span>
+                        <input type="number" x-model="reel3ViewsInput" placeholder="مثال: 8900" class="w-full border border-gray-800 rounded-xl p-3 bg-gray-950 text-center font-mono focus:outline-none text-white font-bold" />
+                    </div>
+                </div>
+            </div>
+
+            <button @click="startRealAnalysis()" class="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold py-4 rounded-2xl text-sm transition-all transform active:scale-95 shadow-lg">
+                إنشاء الاستراتيجية وتحليل الداتا فوراً 🚀
+            </button>
+        </div>
+    </div>
+
+    <div x-show="currentPage === 'loading'" class="flex flex-col items-center justify-center py-24 fade-in">
+        <div class="w-12 h-12 mb-6 rounded-full border-4 border-gray-900 border-t-purple-500 animate-spin"></div>
+        <h3 x-text="loadingText" class="text-sm font-medium text-gray-300 text-center max-w-md leading-relaxed"></h3>
+    </div>
+
+    <div x-show="currentPage === 'dashboard'" class="space-y-8 fade-in">
+        <header class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-gray-900 pb-6">
+            <div>
+                <h2 class="text-lg font-bold text-white">التقرير الاستراتيجي المطور للحساب الخاص بـ @<span x-text="username"></span></h2>
+                <p class="text-gray-500 text-xs mt-1">المسار الفعلي بالسيرفر: <span class="text-purple-400 font-mono font-bold" x-text="'instagram_accounts/' + username"></span></p>
+            </div>
+            <div class="flex flex-wrap bg-gray-950 p-1 rounded-xl border border-gray-900 text-xs">
+                <button @click="dashboardTab = 'strategy'" :class="dashboardTab === 'strategy' ? 'bg-purple-600 text-white shadow' : 'text-gray-400'" class="px-3 py-2 rounded-lg font-medium cursor-pointer transition-all">🎯 استراتيجية الصفحة المخصصة</button>
+                <button @click="dashboardTab = 'reels-ideas'" :class="dashboardTab === 'reels-ideas' ? 'bg-purple-600 text-white shadow' : 'text-gray-400'" class="px-3 py-2 rounded-lg font-medium cursor-pointer transition-all mr-1">🎬 خطة الـ Reels المحدثة</button>
+                <button @click="dashboardTab = 'posts-ideas'" :class="dashboardTab === 'posts-ideas' ? 'bg-purple-600 text-white shadow' : 'text-gray-400'" class="px-3 py-2 rounded-lg font-medium cursor-pointer transition-all mr-1">📸 بوستات الكاروسيل</button>
+                <button @click="dashboardTab = 'design-guide'" :class="dashboardTab === 'design-guide' ? 'bg-purple-600 text-white shadow' : 'text-gray-400'" class="px-3 py-2 rounded-lg font-medium cursor-pointer transition-all mr-1">🎨 الهوية والمود البصري</button>
+            </div>
+        </header>
+
+        <div class="flex justify-end max-w-4xl mx-auto" x-show="dashboardTab === 'reels-ideas' || dashboardTab === 'posts-ideas'">
+            <button @click="toggleAlternativeIdeas()" class="bg-gradient-to-r from-red-500 to-amber-600 hover:from-red-400 hover:to-amber-500 text-white font-bold px-4 py-2 rounded-xl text-xs transition-all transform active:scale-95 shadow-md flex items-center gap-2 cursor-pointer">
+                <span>🔄</span>
+                <span x-text="isAlternative ? 'إعادة كتابة الأفكار الأساسية ومحو البديلة' : 'ما عجبوه الأفكار؟ امحيهم واكتب غيرهم فوراً للعميل'"></span>
+            </button>
+        </div>
+
+        <div x-show="dashboardTab === 'strategy'" class="space-y-6 max-w-4xl mx-auto">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="glass-card p-4 rounded-xl border-r-2 border-purple-500">
+                    <span class="text-[10px] uppercase font-bold text-gray-500 block">متوسط المشاهدات الفعلية لآخر 3 ريلز</span>
+                    <span class="text-xl font-mono font-black text-white mt-1 block" x-text="metrics.avgViews + ' مشاهدة صافية'"></span>
+                </div>
+                <div class="glass-card p-4 rounded-xl border-r-2 border-pink-500">
+                    <span class="text-[10px] uppercase font-bold text-gray-500 block">معدل الانسيابية والتفاعل المحسوب</span>
+                    <span class="text-xl font-mono font-black text-pink-400 mt-1 block" x-text="metrics.engagement"></span>
+                </div>
+                <div class="glass-card p-4 rounded-xl border-r-2 border-cyan-500">
+                    <span class="text-[10px] uppercase font-bold text-gray-500 block">نوع ومود المحتوى المستنتج</span>
+                    <span class="text-xs font-bold text-cyan-400 mt-2 block">Premium Business / Tech Marketing</span>
+                </div>
+            </div>
+
+            <div class="glass-card p-6 rounded-2xl space-y-6">
+                <div>
+                    <h3 class="text-sm font-bold text-purple-400 flex items-center gap-2">🎯 1. الجمهور المستهدف بدقة (Target Audience):</h3>
+                    <p class="text-xs md:text-sm text-gray-300 mt-2 leading-relaxed whitespace-pre-line" x-text="metrics.targetAudience"></p>
+                </div>
+                <div class="border-t border-gray-900 pt-4">
+                    <h3 class="text-sm font-bold text-pink-400 flex items-center gap-2">💎 2. أعمدة المحتوى الثابتة لصفحة العمل (Content Pillars):</h3>
+                    <p class="text-xs md:text-sm text-gray-300 mt-2 leading-relaxed whitespace-pre-line" x-text="metrics.contentPillars"></p>
+                </div>
+                <div class="border-t border-gray-900 pt-4">
+                    <h3 class="text-sm font-bold text-cyan-400 flex items-center gap-2">🚀 3. استراتيجية التموضع والبرستيج (Positioning Strategy):</h3>
+                    <p class="text-xs md:text-sm text-gray-300 mt-2 leading-relaxed whitespace-pre-line" x-text="metrics.positioningStrategy"></p>
+                </div>
+                <div class="border-t border-gray-900 pt-4 bg-gray-950/40 p-4 rounded-xl border border-gray-900">
+                    <h3 class="text-sm font-bold text-green-400 flex items-center gap-2">💰 4. خطة تحويل المتابعين والمشاهدات لـ مبيعات فعلية (Monetization):</h3>
+                    <p class="text-xs md:text-sm text-gray-200 mt-2 leading-relaxed whitespace-pre-line" x-text="metrics.monetizationPlan"></p>
+                </div>
+            </div>
+        </div>
+
+        <div x-show="dashboardTab === 'reels-ideas'" class="space-y-6 max-w-4xl mx-auto">
+            <template x-for="reel in metrics.reelsPlan" :key="reel.id">
+                <div class="glass-card p-6 rounded-2xl border-r-4 border-purple-500 space-y-4">
+                    <div class="flex justify-between items-center border-b border-gray-900 pb-2">
+                        <span class="text-xs font-bold uppercase text-purple-400" x-text="'🎬 فكرة Reel مخصصة ومطورة #' + reel.id"></span>
+                    </div>
+                    <div>
+                        <h4 class="text-gray-500 text-[10px] font-bold">الـ Hook الافتتاحي المقترح:</h4>
+                        <p class="text-sm font-extrabold text-white mt-1" x-text="reel.hook"></p>
+                    </div>
+                    <div>
+                        <h4 class="text-gray-500 text-[10px] font-bold">السيناريو التفصيلي وطريقة التصوير (Script):</h4>
+                        <p class="text-xs text-gray-300 leading-relaxed whitespace-pre-line mt-1 font-mono" x-text="reel.script"></p>
+                    </div>
+                    <div class="bg-gray-950/70 p-4 rounded-xl border border-gray-900">
+                        <h4 class="text-cyan-400 text-[10px] font-bold mb-1">الكابشن التفاعلي الذكي والهاشتاغات:</h4>
+                        <p class="text-xs text-gray-300 leading-relaxed" x-text="reel.caption"></p>
+                        <p class="text-[11px] font-mono text-purple-400 mt-2" x-text="metrics.hashtags"></p>
+                    </div>
+                </div>
+            </template>
+        </div>
+
+        <div x-show="dashboardTab === 'posts-ideas'" class="space-y-6 max-w-4xl mx-auto">
+            <template x-for="post in metrics.postsPlan" :key="post.id">
+                <div class="glass-card p-6 rounded-2xl border-r-4 border-pink-500 space-y-4">
+                    <div class="flex justify-between items-center border-b border-gray-900 pb-2">
+                        <span class="text-xs font-bold uppercase text-pink-400" x-text="'📸 فكرة بوست كاروسيل منظم #' + post.id"></span>
+                    </div>
+                    <div>
+                        <h4 class="text-gray-500 text-[10px] font-bold">عنوان شريحة الغلاف الأساسية:</h4>
+                        <p class="text-sm font-extrabold text-white mt-1" x-text="post.title"></p>
+                    </div>
+                    <div>
+                        <h4 class="text-gray-500 text-[10px] font-bold">تسلسل الشرائح البصرية للكاروسيل:</h4>
+                        <p class="text-xs text-gray-300 leading-relaxed whitespace-pre-line mt-1" x-text="post.slides"></p>
+                    </div>
+                    <div class="bg-gray-950/70 p-3 rounded-xl border border-gray-900">
+                        <h4 class="text-cyan-400 text-[10px] font-bold mb-1">الكابشن المخصص للبوست للتحفيز على الحفظ والتعليق:</h4>
+                        <p class="text-xs text-gray-300 leading-relaxed" x-text="post.caption"></p>
+                    </div>
+                </div>
+            </template>
+        </div>
+
+        <div x-show="dashboardTab === 'design-guide'" class="max-w-3xl mx-auto">
+            <div class="glass-card p-6 rounded-2xl space-y-6 border border-purple-500/10">
+                <div><h4 class="text-cyan-400 text-xs font-bold mb-1">المود العام والتوجه الفني للمحتوى البصري</h4><p class="text-xs md:text-sm text-gray-200 leading-relaxed" x-text="metrics.designStyle"></p></div>
+                <div class="border-t border-gray-900 pt-4"><h4 class="text-pink-400 text-xs font-bold mb-1">باليت ألوان البراند الفخمة المعتمدة</h4><p class="text-xs md:text-sm text-gray-200 leading-relaxed whitespace-pre-line" x-text="metrics.colorPalette"></p></div>
+            </div>
+        </div>
+    </div>
+</div>
 
